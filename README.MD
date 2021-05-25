@@ -3,9 +3,7 @@
 Vite plugin to lint files and show the linter output in the Vite output and the browser console.
 Note this plugin is Vite only as it uses the Vite specific hook `configureServer`.
 
-Included linters:
-- ESLint
-- TypeScript
+Included linters: ESLint & TypeScript
 
 Custom linters can be created by extending the Linter interface
 
