@@ -2,9 +2,10 @@
   "name": "vite-plugin-linter",
   "description": "Plugin for linting files with Vite",
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@rollup/pluginutils": "4.1.0",
@@ -16,13 +17,15 @@
     "vite": "2.3.3"
   },
   "homepage": "https://bitbucket.org/unimorphic/vite-plugin-linter",
-  "repository": {
-    "type": "git",
-    "url": "https://unimorphic@bitbucket.org/unimorphic/vite-plugin-linter.git"
-  },
   "keywords": [
     "eslint",
     "typescript",
     "vite-plugin"
-  ]
+  ],
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://unimorphic@bitbucket.org/unimorphic/vite-plugin-linter.git"
+  },
+  "types": "dist/index.d.ts"
 }
