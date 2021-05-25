@@ -6,14 +6,14 @@
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "es5"],
+    "module": "commonjs",
     "moduleResolution": "Node",
     "outDir": "./dist",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ESNext",
+    "target": "es5",
   },
   "include": ["./src"]
 }
