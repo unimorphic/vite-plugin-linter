@@ -58,7 +58,7 @@ export default function linterPlugin(
   let devServer: ViteDevServer | null = null;
   let processingFiles: string[] = [];
   let processingTimeout: NodeJS.Timeout;
-  let hasInjectedJs = false;
+  let injectedFile: string | null = null;
 
   let dataByFileNameByLinterName: {
     [linterName: string]: { [fileName: string]: LinterResultData };
@@ -153,8 +153,11 @@ export default function linterPlugin(
           const content = fs.readFileSync(id);
           return content + clientJs;
         }
-      } else if (!hasInjectedJs && !file.startsWith("node_modules/")) {
-        hasInjectedJs = true;
+      } else if (
+        (injectedFile === null && !file.startsWith("node_modules/")) ||
+        file === injectedFile
+      ) {
+        injectedFile = file;
         const content = fs.readFileSync(id);
         return content + clientJs;
       }
