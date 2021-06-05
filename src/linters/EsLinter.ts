@@ -1,12 +1,25 @@
 import { ESLint } from "eslint";
+import fs from "fs";
 import Linter, { LinterResult } from "../Linter";
 import { normalizePath } from "../utils";
 
-export interface EsLinterOptions {
-  cache?: boolean;
-  fix?: boolean;
+export interface EsLinterOptions extends ESLint.Options {
+  /**
+   * If the cache file should be removed before each start
+   */
+  clearCacheOnStart?: boolean;
+
+  /**
+   * Output formatter. Default is stylish
+   */
   formatter?: string | ESLint.Formatter;
 }
+
+const defaultOptions: EsLinterOptions = {
+  cache: true,
+  cacheLocation: "./node_modules/.cache/.eslintcache",
+  fix: false,
+};
 
 export default class EsLinter implements Linter<ESLint.LintResult> {
   public readonly name = "EsLinter";
@@ -15,12 +28,17 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
   private readonly options: EsLinterOptions;
 
   constructor(options?: EsLinterOptions) {
-    const defaultOptions: EsLinterOptions = { cache: true, fix: false };
     this.options = { ...defaultOptions, ...options };
-    this.eslint = new ESLint({
-      cache: this.options.cache,
-      fix: this.options.fix,
-    });
+
+    const { clearCacheOnStart, formatter, ...esLintOptions } = this.options;
+    this.eslint = new ESLint(esLintOptions);
+
+    if (clearCacheOnStart) {
+      const cachePath = this.options.cacheLocation ?? ".eslintcache";
+      if (fs.existsSync(cachePath)) {
+        fs.unlinkSync(cachePath);
+      }
+    }
   }
 
   public async format(results: ESLint.LintResult[]): Promise<string> {
