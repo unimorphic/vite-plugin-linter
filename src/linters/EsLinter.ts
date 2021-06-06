@@ -1,9 +1,29 @@
 import { ESLint } from "eslint";
 import fs from "fs";
+import { ConfigEnv } from "vite";
 import Linter, { LinterResult } from "../Linter";
 import { normalizePath } from "../utils";
 
-export interface EsLinterOptions extends ESLint.Options {
+export interface EsLinterOptions {
+  /**
+   * Options used when called via the build command.
+   * Defaults: cache: false, fix: false
+   */
+  buildOptions?: EsLintOptions;
+
+  /**
+   * The current Vite configuration environment
+   */
+  configEnv: ConfigEnv;
+
+  /**
+   * Options used when called via the serve command.
+   * Defaults: cache: true, cacheLocation: "./node_modules/.cache/.eslintcache", fix: false
+   */
+  serveOptions?: EsLintOptions;
+}
+
+export interface EsLintOptions extends ESLint.Options {
   /**
    * If the cache file should be removed before each start
    */
@@ -15,7 +35,12 @@ export interface EsLinterOptions extends ESLint.Options {
   formatter?: string | ESLint.Formatter;
 }
 
-const defaultOptions: EsLinterOptions = {
+const defaultBuildOptions: EsLintOptions = {
+  cache: false,
+  fix: false,
+};
+
+const defaultServeOptions: EsLintOptions = {
   cache: true,
   cacheLocation: "./node_modules/.cache/.eslintcache",
   fix: false,
@@ -25,10 +50,14 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
   public readonly name = "EsLinter";
   private readonly eslint: ESLint;
   private formatter: ESLint.Formatter | null = null;
-  private readonly options: EsLinterOptions;
+  private readonly options: EsLintOptions;
 
   constructor(options?: EsLinterOptions) {
-    this.options = { ...defaultOptions, ...options };
+    if (options?.configEnv.command === "build") {
+      this.options = { ...defaultBuildOptions, ...options.buildOptions };
+    } else {
+      this.options = { ...defaultServeOptions, ...options?.serveOptions };
+    }
 
     const { clearCacheOnStart, formatter, ...esLintOptions } = this.options;
     this.eslint = new ESLint(esLintOptions);
@@ -49,10 +78,27 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
     return this.formatter!.format(results);
   }
 
-  public async lint(
+  public async lintBuild(files: string[]): Promise<ESLint.LintResult[]> {
+    return await this.lint(files);
+  }
+
+  public async lintServe(
     files: string[],
     output: (result: LinterResult<ESLint.LintResult>) => void
   ): Promise<void> {
+    const reports = await this.lint(files);
+
+    const result: LinterResult<ESLint.LintResult> = {};
+    for (const report of reports) {
+      if (report.errorCount > 0 || report.warningCount > 0) {
+        result[normalizePath(report.filePath)] = report;
+      }
+    }
+
+    output(result);
+  }
+
+  private async lint(files: string[]): Promise<ESLint.LintResult[]> {
     const lintFiles: string[] = [];
     for (const file of files) {
       if (!(await this.eslint.isPathIgnored(file))) {
@@ -66,14 +112,7 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
       ESLint.outputFixes(reports);
     }
 
-    const result: LinterResult<ESLint.LintResult> = {};
-    for (const report of reports) {
-      if (report.errorCount > 0 || report.warningCount > 0) {
-        result[normalizePath(report.filePath)] = report;
-      }
-    }
-
-    output(result);
+    return reports;
   }
 
   private async loadFormatter(): Promise<void> {

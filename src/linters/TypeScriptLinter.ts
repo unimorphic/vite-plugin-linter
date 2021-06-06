@@ -20,7 +20,16 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
     return ts.formatDiagnosticsWithColorAndContext(results, this.formatHost);
   }
 
-  public lint(
+  public async lintBuild(files: string[]): Promise<readonly ts.Diagnostic[]> {
+    if (!this.options) {
+      this.loadOptions();
+    }
+
+    const program = ts.createProgram(files, this.options!);
+    return ts.getPreEmitDiagnostics(program);
+  }
+
+  public lintServe(
     files: string[],
     output: (result: LinterResult<ts.Diagnostic>) => void
   ): void {

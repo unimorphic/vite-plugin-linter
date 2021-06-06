@@ -6,7 +6,6 @@ Note this plugin is Vite only as it uses the Vite specific hook `configureServer
 
 Included linters: ESLint & TypeScript
 
-Custom linters can be created by extending the Linter interface
 
 ## Install
 
@@ -14,51 +13,110 @@ Custom linters can be created by extending the Linter interface
 npm install vite-plugin-linter --save-dev
 ```
 
+
 ## Usage
 
 ```js
 import { defineConfig } from "vite";
 import { EsLinter, linterPlugin, TypeScriptLinter } from "vite-plugin-linter";
 
-export default defineConfig({
+export default defineConfig((configEnv) => ({
   plugins: [
     linterPlugin({
       include: ["./src/**/*[.ts|.tsx]"],
-      linters: [new EsLinter(), new TypeScriptLinter()],
+      linters: [new EsLinter({ configEnv: configEnv }), new TypeScriptLinter()],
     }),
   ],
-});
+}));
 ```
 
-## Options
+## linterPlugin Options
 
-### `exclude`
+### disableForBuild
 
-- Type: `FilterPattern`
+- Type: `boolean`
+- Default: `false`
+
+If the plugin should not execute when called via the build command
+
+### exclude
+
+- Type: `String | RegExp | Array[...String|RegExp]`
 - Default: `/node_modules/`
 
-File(s) to exclude. Ex: `.\src\**\*.ts`
+File(s) to exclude. A valid [picomatch](https://github.com/micromatch/picomatch#globbing-features) pattern, or array of patterns. Ex: `.\src\mine.ts`
 
-### `include`
+### include
 
-- Type: `FilterPattern`
+- Type: `String | RegExp | Array[...String|RegExp]`
 - Default: `undefined`
 
-File(s) to include. Ex: `.\src\**\*.ts`
+File(s) to include. A valid [picomatch](https://github.com/micromatch/picomatch#globbing-features) pattern, or array of patterns. Ex: `.\src\**\*.ts`
 
-### `injectFile`
+### injectFile
 
 - Type: `string`
 - Default: The first file not in node_modules
 
-File to inject the logging code into
+File to inject the browser console logging code into
 
-### `linters`
+### linters
 
 - Type: `Linter[]`
 - Required
 
 Linters to run
+
+
+## EsLinter Options
+
+### buildOptions
+
+- Type: `EsLintOptions`
+- Default: `cache: false, fix: false`
+
+Options used when called via the build command
+
+### configEnv
+
+- Type: `ConfigEnv`
+- Required
+
+The current Vite configuration environment
+
+### serveOptions
+
+- Type: `EsLintOptions`
+- Default: `cache: true, cacheLocation: "./node_modules/.cache/.eslintcache", fix: false`
+
+Options used when called via the serve command
+
+
+## EsLintOptions Type
+
+This type extends [ESLint.Options](https://eslint.org/docs/developer-guide/nodejs-api#parameters) with the following additional members
+
+### clearCacheOnStart
+
+- Type: `boolean`
+- Default: `false`
+
+If the cache file should be removed before each start
+
+### formatter
+
+- Type: `string | ESLint.Formatter`
+- Default: `stylish`
+
+Output formatter https://eslint.org/docs/user-guide/formatters/
+
+
+## Custom Linters
+
+Custom linters can be created by extending the [Linter interface](https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/Linter.ts)
+
+See the included linters for examples https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/linters/
+
 
 ## License
 
