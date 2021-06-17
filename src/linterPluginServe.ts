@@ -147,7 +147,12 @@ export default function linterPluginServe(
       }
 
       clearTimeout(processingTimeout);
-      processingFiles.push(normalizePath(id));
+      
+      const file = normalizePath(id);
+      if (fs.existsSync(file)) {
+        processingFiles.push(file);
+      }
+
       const pluginContext = this;
       processingTimeout = setTimeout(
         () =>
