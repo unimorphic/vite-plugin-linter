@@ -128,7 +128,9 @@ export default function linterPluginServe(
           return content + clientJs;
         }
       } else if (
-        (injectedFile === null && !file.startsWith("node_modules/")) ||
+        (injectedFile === null &&
+          !file.startsWith("node_modules/") &&
+          fs.existsSync(file)) ||
         file === injectedFile
       ) {
         injectedFile = file;
