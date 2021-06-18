@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import ts from "typescript";
 import Linter, { LinterResult } from "../Linter";
-import { normalizePath, onlyUnique } from "../utils";
+import { normalizePath, onlyUnique, readAllFiles } from "../utils";
 
 export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
   public readonly name = "TypeScriptLinter";
@@ -25,7 +25,9 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
       this.loadOptions();
     }
 
-    const program = ts.createProgram(files, this.options!);
+    const allFiles = files.concat(this.getCustomTypeRootFiles());
+
+    const program = ts.createProgram(allFiles, this.options!);
     return ts.getPreEmitDiagnostics(program);
   }
 
@@ -35,6 +37,8 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
   ): void {
     if (!this.options) {
       this.loadOptions();
+
+      this.watchingFiles = this.watchingFiles.concat(this.getCustomTypeRootFiles());
     }
 
     if (files.some((f) => !this.watchingFiles.includes(f))) {
@@ -66,6 +70,19 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
         this.watcher.updateRootFileNames(this.watchingFiles);
       }
     }
+  }
+
+  // Fix for ts api not respecting typeRoots option
+  private getCustomTypeRootFiles(): string[] {
+    const files: string[] = [];
+    if (this.options!.typeRoots) {
+      for (const root of this.options!.typeRoots) {
+        if (!root.includes("node_modules")) {
+          readAllFiles(root, files, ".d.ts");
+        }
+      }
+    }
+    return files;
   }
 
   private loadOptions(): void {
