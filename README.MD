@@ -23,7 +23,7 @@ import { EsLinter, linterPlugin, TypeScriptLinter } from "vite-plugin-linter";
 export default defineConfig((configEnv) => ({
   plugins: [
     linterPlugin({
-      include: ["./src/**/*[.ts|.tsx]"],
+      include: ["./src/**/*.ts", "./src/**/*.tsx"],
       linters: [new EsLinter({ configEnv: configEnv }), new TypeScriptLinter()],
     }),
   ],
