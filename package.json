@@ -2,7 +2,7 @@
   "name": "vite-plugin-linter",
   "description": "Plugin for linting files with Vite",
   "license": "MIT",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
