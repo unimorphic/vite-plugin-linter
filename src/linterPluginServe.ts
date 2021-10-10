@@ -1,12 +1,18 @@
-import { createFilter } from "@rollup/pluginutils";
 import fs from "fs";
+import path from "path";
 import { PluginContext } from "rollup";
 import { Plugin, ViteDevServer } from "vite";
 import Linter from "./Linter";
-import { LinterPluginOptions, LinterResultData } from "./linterPlugin";
-import { normalizePath } from "./utils";
+import {
+  IncludeMode,
+  LinterPluginOptions,
+  LinterResultData,
+} from "./linterPlugin";
+import { normalizePath, readAllFiles } from "./utils";
 
-const eventName = "eslint-warn";
+export const servePluginName = "vite-plugin-linter-serve";
+
+const clientEventName = "eslint-warn";
 
 const clientJs = `
   if (import.meta.hot) {
@@ -21,18 +27,20 @@ const clientJs = `
       })
       .catch(e => console.error(e));
 
-    import.meta.hot.on("${eventName}", d => console.warn(d));
+    import.meta.hot.on("${clientEventName}", d => console.warn(d));
   }
 `;
 
 export default function linterPluginServe(
   options: LinterPluginOptions = {} as LinterPluginOptions,
-  filter: (id: string | unknown) => boolean
+  fileFilter: (id: string | unknown) => boolean
 ): Plugin {
   let devServer: ViteDevServer | null = null;
-  let processingFiles: string[] = [];
-  let processingTimeout: NodeJS.Timeout;
+  const includeMode: IncludeMode =
+    options.serve?.includeMode ?? "processedFiles";
   let injectedFile: string | null = null;
+  let lintFiles: string[] = [];
+  let processingTimeout: NodeJS.Timeout;
 
   let dataByFileNameByLinterName: {
     [linterName: string]: { [fileName: string]: LinterResultData };
@@ -58,8 +66,10 @@ export default function linterPluginServe(
   }
 
   async function processFiles(pluginContext: PluginContext): Promise<void> {
-    const files = [...processingFiles];
-    processingFiles = [];
+    const files = [...lintFiles];
+    if (includeMode !== "filesInFolder") {
+      lintFiles = [];
+    }
 
     for (const linter of options.linters) {
       linter.lintServe(files, async (result) => {
@@ -83,7 +93,7 @@ export default function linterPluginServe(
 
           if (devServer) {
             devServer.ws.send({
-              event: eventName,
+              event: clientEventName,
               data: output,
               type: "custom",
             });
@@ -93,9 +103,95 @@ export default function linterPluginServe(
     }
   }
 
+  function watchDirectory(
+    directory: string,
+    pluginContext: PluginContext
+  ): void {
+    function onChange(itemName: string): void {
+      if (!itemName) {
+        return;
+      }
+
+      const fullPath = path.join(directory, itemName);
+      const normalizedPath = normalizePath(fullPath);
+      let changed = false;
+
+      if (fileFilter(fullPath)) {
+        if (
+          includeMode === "filesInFolder" &&
+          !lintFiles.includes(normalizedPath)
+        ) {
+          lintFiles.push(normalizedPath);
+        }
+        changed = true;
+      } else if (
+        fs.existsSync(itemName) &&
+        fs.lstatSync(itemName).isDirectory()
+      ) {
+        const children = readAllFiles(fullPath, fileFilter).map((f) =>
+          normalizePath(f)
+        );
+
+        if (includeMode === "filesInFolder") {
+          for (const child of children) {
+            if (!lintFiles.includes(child)) {
+              lintFiles.push(child);
+              changed = true;
+            }
+          }
+          for (let index = lintFiles.length - 1; index >= 0; index--) {
+            const file = lintFiles[index];
+            if (file.startsWith(normalizedPath) && !children.includes(file)) {
+              lintFiles.splice(index, 1);
+              changed = true;
+            }
+          }
+        }
+
+        for (const linter of options.linters) {
+          const dataByFileName = dataByFileNameByLinterName[linter.name];
+          for (const file of Object.keys(dataByFileName)) {
+            if (file.startsWith(normalizedPath) && !children.includes(file)) {
+              delete dataByFileName[file];
+            }
+          }
+        }
+      }
+
+      if (includeMode === "filesInFolder" && changed) {
+        processFiles(pluginContext);
+      }
+    }
+
+    let watchTimeout: NodeJS.Timeout;
+    fs.watch(
+      directory,
+      { persistent: false, recursive: true },
+      (event, fileName) => {
+        clearTimeout(watchTimeout); // Ignore duplicate events
+        watchTimeout = setTimeout(() => {
+          onChange(fileName);
+        }, 100);
+      }
+    );
+  }
+
   return {
     apply: "serve",
-    name: "vite-plugin-linter-serve",
+    name: servePluginName,
+
+    buildStart() {
+      const currentDirectory = process.cwd();
+
+      watchDirectory(currentDirectory, this);
+
+      if (includeMode === "filesInFolder") {
+        lintFiles = readAllFiles(currentDirectory, fileFilter).map((f) =>
+          normalizePath(f)
+        );
+        setTimeout(() => processFiles(this));
+      }
+    },
 
     configureServer(server: ViteDevServer) {
       devServer = server;
@@ -142,18 +238,17 @@ export default function linterPluginServe(
     },
 
     async transform(code, id) {
-      if (!filter(id)) {
+      if (!fileFilter(id) || includeMode === "filesInFolder") {
         return null;
       }
 
-      clearTimeout(processingTimeout);
-      
       const file = normalizePath(id);
       if (fs.existsSync(file)) {
-        processingFiles.push(file);
+        lintFiles.push(file);
       }
 
       const pluginContext = this;
+      clearTimeout(processingTimeout);
       processingTimeout = setTimeout(
         () =>
           processFiles(pluginContext).catch((ex) => pluginContext.error(ex)),

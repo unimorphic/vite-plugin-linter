@@ -32,12 +32,21 @@ export default defineConfig((configEnv) => ({
 
 ## linterPlugin Options
 
-### disableForBuild
+### build.disable / serve.disable
 
 - Type: `boolean`
 - Default: `false`
 
-If the plugin should not execute when called via the build command
+If the plugin should not execute when called via the build/serve command
+
+### build.includeMode / serve.includeMode
+
+- Type: `"processedFiles" | "filesInFolder"`
+- Default: `processedFiles`
+
+Which files to lint when called via the build/serve command
+`processedFiles` lints only the files processed by Vite
+`filesInFolder` lints all files in the project folder
 
 ### exclude
 
@@ -115,7 +124,12 @@ Output formatter https://eslint.org/docs/user-guide/formatters/
 
 Custom linters can be created by extending the [Linter interface](https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/Linter.ts)
 
-See the included linters for examples https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/linters/
+See the [included linters](https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/linters/) for examples
+
+
+## Feedback
+
+[Submit](https://bitbucket.org/unimorphic/vite-plugin-linter/issues/new) bug reports and other feedback in the [issues](https://bitbucket.org/unimorphic/vite-plugin-linter/issues?status=new&status=open) section
 
 
 ## License

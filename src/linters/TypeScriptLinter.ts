@@ -38,7 +38,9 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
     if (!this.options) {
       this.loadOptions();
 
-      this.watchingFiles = this.watchingFiles.concat(this.getCustomTypeRootFiles());
+      this.watchingFiles = this.watchingFiles.concat(
+        this.getCustomTypeRootFiles()
+      );
     }
 
     if (files.some((f) => !this.watchingFiles.includes(f))) {
@@ -74,11 +76,11 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
 
   // Fix for ts api not respecting typeRoots option
   private getCustomTypeRootFiles(): string[] {
-    const files: string[] = [];
+    let files: string[] = [];
     if (this.options!.typeRoots) {
       for (const root of this.options!.typeRoots) {
         if (!root.includes("node_modules")) {
-          readAllFiles(root, files, ".d.ts");
+          files = files.concat(readAllFiles(root, (f) => f.endsWith(".d.ts")));
         }
       }
     }

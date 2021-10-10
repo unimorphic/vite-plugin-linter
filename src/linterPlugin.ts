@@ -4,11 +4,42 @@ import Linter from "./Linter";
 import linterPluginBuild from "./linterPluginBuild";
 import linterPluginServe from "./linterPluginServe";
 
+export type IncludeMode = "processedFiles" | "filesInFolder";
+
 export interface LinterPluginOptions {
   /**
-   * If the plugin should not execute when called via the build command
+   * Options used when called via the build command
    */
-  disableForBuild?: boolean;
+  build?: {
+    /**
+     * If the plugin should not execute when called via the build command
+     */
+    disable?: boolean;
+
+    /**
+     * Which files to lint when called via the build command
+     * processedFiles lints only the files processed by Vite (default)
+     * filesInFolder lints all files in the project folder
+     */
+    includeMode?: IncludeMode;
+  };
+
+  /**
+   * Options used when called via the serve command
+   */
+  serve?: {
+    /**
+     * If the plugin should not execute when called via the serve command
+     */
+    disable?: boolean;
+
+    /**
+     * Which files to lint when called via the serve command
+     * processedFiles lints only the files processed by Vite (default)
+     * filesInFolder lints all files in the project folder
+     */
+    includeMode?: IncludeMode;
+  };
 
   /**
    * File(s) to exclude. Defaults to /node_modules/ (Ex: .\src\mine.ts)
@@ -36,14 +67,18 @@ export type LinterResultData = any;
 export default function linterPlugin(
   options: LinterPluginOptions = {} as LinterPluginOptions
 ): Plugin[] {
-  const filter = createFilter(
+  const fileFilter = createFilter(
     options.include,
-    options.exclude || /node_modules/
+    options.exclude ?? /node_modules/
   );
 
-  const plugins = [linterPluginServe(options, filter)];
-  if (!options.disableForBuild) {
-    plugins.push(linterPluginBuild(options, filter));
+  const plugins = [];
+  
+  if (!options.serve?.disable) {
+    plugins.push(linterPluginServe(options, fileFilter));
+  }
+  if (!options.build?.disable) {
+    plugins.push(linterPluginBuild(options, fileFilter));
   }
 
   return plugins;

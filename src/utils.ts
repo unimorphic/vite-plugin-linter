@@ -15,16 +15,18 @@ export function onlyUnique(
 
 export function readAllFiles(
   folder: string,
-  files: string[],
-  extension: string
-): void {
+  filter: (fileName: string) => boolean
+): string[] {
+  let files: string[] = [];
   const children = fs.readdirSync(folder, { withFileTypes: true });
   for (const child of children) {
     const childName = folder + "/" + child.name;
     if (child.isDirectory()) {
-      readAllFiles(childName, files, extension);
-    } else if (childName.endsWith(extension)) {
+      files = files.concat(readAllFiles(childName, filter));
+    } else if (filter(childName)) {
       files.push(childName);
     }
   }
+
+  return files;
 }
