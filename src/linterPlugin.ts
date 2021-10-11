@@ -73,11 +73,15 @@ export default function linterPlugin(
   );
 
   const plugins = [];
-  
+
   if (!options.serve?.disable) {
     plugins.push(linterPluginServe(options, fileFilter));
   }
-  if (!options.build?.disable) {
+  
+  if (
+    !options.build?.disable ||
+    global.vitePluginLinter?.mode === "lintCommand"
+  ) {
     plugins.push(linterPluginBuild(options, fileFilter));
   }
 

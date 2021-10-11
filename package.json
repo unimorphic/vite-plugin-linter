@@ -7,6 +7,7 @@
     "build": "tsc",
     "prepare": "npm run build"
   },
+  "bin": "./dist/lintCommand.js",
   "dependencies": {
     "@rollup/pluginutils": "4.1.1",
     "@types/eslint": "7.28.1",

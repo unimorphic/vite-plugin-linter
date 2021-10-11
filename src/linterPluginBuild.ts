@@ -4,10 +4,14 @@ import { normalizePath, readAllFiles } from "./utils";
 
 export const buildPluginName = "vite-plugin-linter-build";
 
+export interface LinterBuildPlugin extends Plugin {
+  lintFolder(folder: string): Promise<string[]>;
+}
+
 export default function linterPluginBuild(
   options: LinterPluginOptions = {} as LinterPluginOptions,
   fileFilter: (id: string | unknown) => boolean
-): Plugin {
+): LinterBuildPlugin {
   const includeMode: IncludeMode =
     options.build?.includeMode ?? "processedFiles";
   const transformedFiles: string[] = [];
@@ -52,6 +56,10 @@ export default function linterPluginBuild(
         }
         this.error("Linting failed, see above output");
       }
+    },
+
+    lintFolder(folder: string) {
+      return lintFolder(folder);
     },
 
     transform(code, id) {

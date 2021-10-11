@@ -120,6 +120,11 @@ If the cache file should be removed before each start
 Output formatter https://eslint.org/docs/user-guide/formatters/
 
 
+## Command Line
+
+A node script that executes the configured linters is included that can be run via npm, for example, in package.json: `"scripts": { "lint": "vite-plugin-linter" }`. A example of where this could be used is in a Git pre-commit hook. The `includeMode` option is always `filesInFolder` when running via this script.
+
+
 ## Custom Linters
 
 Custom linters can be created by extending the [Linter interface](https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/Linter.ts)
