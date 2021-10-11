@@ -4,3 +4,6 @@
 * Added npm vite-plugin-linter command
 * Moved linting to worker threads
 * Fixed bug where TypeScript lint output wasn't cleared when all errors were fixed
+
+## 1.0.1 (2021-10-10)
+* Fixed bug where new files weren't included in the TypeScript lint output

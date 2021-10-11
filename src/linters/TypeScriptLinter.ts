@@ -46,32 +46,32 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
     if (files.some((f) => !this.watchingFiles.includes(f))) {
       this.watchingFiles = this.watchingFiles.concat(files).filter(onlyUnique);
 
-      if (!this.watcher) {
-        const host = ts.createWatchCompilerHost(
-          this.watchingFiles,
-          this.options!,
-          ts.sys,
-          undefined,
-          (diagnostic) => {
-            if (
-              diagnostic.category !== ts.DiagnosticCategory.Message &&
-              diagnostic.file
-            ) {
-              output({
-                [normalizePath(diagnostic.file.fileName)]: diagnostic,
-              });
-            }
-          },
-          (diagnostic, newLine, options, errorCount) => {
-            if (errorCount !== undefined && errorCount <= 0) {
-              output({});
-            }
-          }
-        );
-        this.watcher = ts.createWatchProgram(host);
-      } else {
-        this.watcher.updateRootFileNames(this.watchingFiles);
+      if (this.watcher) {
+        this.watcher.close();
       }
+
+      const host = ts.createWatchCompilerHost(
+        this.watchingFiles,
+        this.options!,
+        ts.sys,
+        undefined,
+        (diagnostic) => {
+          if (
+            diagnostic.category !== ts.DiagnosticCategory.Message &&
+            diagnostic.file
+          ) {
+            output({
+              [normalizePath(diagnostic.file.fileName)]: diagnostic,
+            });
+          }
+        },
+        (diagnostic, newLine, options, errorCount) => {
+          if (errorCount !== undefined && errorCount <= 0) {
+            output({});
+          }
+        }
+      );
+      this.watcher = ts.createWatchProgram(host);
     }
   }
 
