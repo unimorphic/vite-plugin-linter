@@ -1,13 +1,16 @@
 import fs from "fs";
 import path from "path";
 import { PluginContext } from "rollup";
-import { Plugin, ViteDevServer } from "vite";
+import { ViteDevServer } from "vite";
+import { Worker } from "worker_threads";
 import Linter from "./Linter";
 import {
   IncludeMode,
+  LinterPluginBase,
   LinterPluginOptions,
   LinterResultData,
 } from "./linterPlugin";
+import { createWorkerThreads, WorkerThreadMessage } from "./lintWorkerThread";
 import { normalizePath, readAllFiles } from "./utils";
 
 export const servePluginName = "vite-plugin-linter-serve";
@@ -34,13 +37,14 @@ const clientJs = `
 export default function linterPluginServe(
   options: LinterPluginOptions = {} as LinterPluginOptions,
   fileFilter: (id: string | unknown) => boolean
-): Plugin {
+): LinterPluginBase {
   let devServer: ViteDevServer | null = null;
   const includeMode: IncludeMode =
     options.serve?.includeMode ?? "processedFiles";
   let injectedFile: string | null = null;
   let lintFiles: string[] = [];
   let processingTimeout: NodeJS.Timeout;
+  let workersByLinterName: { [linterName: string]: Worker } = {};
 
   let dataByFileNameByLinterName: {
     [linterName: string]: { [fileName: string]: LinterResultData };
@@ -65,41 +69,43 @@ export default function linterPluginServe(
     return "";
   }
 
-  async function processFiles(pluginContext: PluginContext): Promise<void> {
+  async function onWorkerMessage(
+    message: WorkerThreadMessage,
+    pluginContext: PluginContext
+  ): Promise<void> {
+    const dataByFileName = dataByFileNameByLinterName[message.linterName];
+
+    for (const file of message.files) {
+      if (file in message.result.serve!) {
+        dataByFileName[file] = message.result.serve![file];
+      } else if (file in dataByFileName) {
+        delete dataByFileName[file];
+      }
+    }
+
+    const linter = options.linters.find((l) => l.name === message.linterName)!;
+    const output = await getFormattedOutput(linter);
+    if (output) {
+      pluginContext.warn(output);
+
+      if (devServer) {
+        devServer.ws.send({
+          event: clientEventName,
+          data: output,
+          type: "custom",
+        });
+      }
+    }
+  }
+
+  async function processFiles(): Promise<void> {
     const files = [...lintFiles];
     if (includeMode !== "filesInFolder") {
       lintFiles = [];
     }
 
     for (const linter of options.linters) {
-      linter.lintServe(files, async (result) => {
-        if (!result) {
-          return;
-        }
-
-        const dataByFileName = dataByFileNameByLinterName[linter.name];
-
-        for (const file of files) {
-          if (file in result) {
-            dataByFileName[file] = result[file];
-          } else if (file in dataByFileName) {
-            delete dataByFileName[file];
-          }
-        }
-
-        const output = await getFormattedOutput(linter);
-        if (output) {
-          pluginContext.warn(output);
-
-          if (devServer) {
-            devServer.ws.send({
-              event: clientEventName,
-              data: output,
-              type: "custom",
-            });
-          }
-        }
-      });
+      workersByLinterName[linter.name].postMessage(files);
     }
   }
 
@@ -159,7 +165,7 @@ export default function linterPluginServe(
       }
 
       if (includeMode === "filesInFolder" && changed) {
-        processFiles(pluginContext);
+        processFiles();
       }
     }
 
@@ -181,6 +187,16 @@ export default function linterPluginServe(
     name: servePluginName,
 
     buildStart() {
+      workersByLinterName = createWorkerThreads(
+        "serve",
+        servePluginName,
+        options.linters
+      );
+      for (const linterName of Object.keys(workersByLinterName)) {
+        const worker = workersByLinterName[linterName];
+        worker.on("message", (message) => onWorkerMessage(message, this));
+      }
+
       const currentDirectory = process.cwd();
 
       watchDirectory(currentDirectory, this);
@@ -189,7 +205,7 @@ export default function linterPluginServe(
         lintFiles = readAllFiles(currentDirectory, fileFilter).map((f) =>
           normalizePath(f)
         );
-        setTimeout(() => processFiles(this));
+        setTimeout(() => processFiles());
       }
     },
 
@@ -213,6 +229,10 @@ export default function linterPluginServe(
           next();
         }
       });
+    },
+
+    getLinter(name: string) {
+      return options.linters.find((l) => l.name === name);
     },
 
     load(id) {
@@ -250,8 +270,7 @@ export default function linterPluginServe(
       const pluginContext = this;
       clearTimeout(processingTimeout);
       processingTimeout = setTimeout(
-        () =>
-          processFiles(pluginContext).catch((ex) => pluginContext.error(ex)),
+        () => processFiles().catch((ex) => pluginContext.error(ex)),
         1000
       );
 

@@ -62,6 +62,10 @@ export interface LinterPluginOptions {
   linters: Linter<LinterResultData>[];
 }
 
+export interface LinterPluginBase extends Plugin {
+  getLinter(name: string): Linter<LinterResultData> | undefined;
+}
+
 export type LinterResultData = any;
 
 export default function linterPlugin(

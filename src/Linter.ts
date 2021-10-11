@@ -1,4 +1,4 @@
-export type LinterResult<T> = { [file: string]: T } | undefined;
+export type LinterResult<T> = { [file: string]: T };
 
 export default interface Linter<T> {
   /**

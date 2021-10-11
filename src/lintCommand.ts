@@ -2,7 +2,7 @@
 import { resolveConfig } from "vite";
 import { buildPluginName, LinterBuildPlugin } from "./linterPluginBuild";
 
-export default async function lint(): Promise<void> {
+async function lint(): Promise<void> {
   const config = await resolveConfig({}, "build");
   const plugin = config.plugins.find((p) => p.name === buildPluginName);
 

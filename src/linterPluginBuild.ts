@@ -1,10 +1,10 @@
-import { Plugin } from "vite";
-import { IncludeMode, LinterPluginOptions } from "./linterPlugin";
+import { IncludeMode, LinterPluginBase, LinterPluginOptions } from "./linterPlugin";
+import { createWorkerThreads, WorkerThreadMessage } from "./lintWorkerThread";
 import { normalizePath, readAllFiles } from "./utils";
 
 export const buildPluginName = "vite-plugin-linter-build";
 
-export interface LinterBuildPlugin extends Plugin {
+export interface LinterBuildPlugin extends LinterPluginBase {
   lintFolder(folder: string): Promise<string[]>;
 }
 
@@ -16,25 +16,8 @@ export default function linterPluginBuild(
     options.build?.includeMode ?? "processedFiles";
   const transformedFiles: string[] = [];
 
-  async function lintFiles(files: string[]): Promise<string[]> {
-    const outputLines: string[] = [];
-    for (const linter of options.linters) {
-      const result = await linter.lintBuild(files);
-      const output = await linter.format(result);
-      if (output) {
-        outputLines.push(output);
-      }
-    }
-
-    return outputLines;
-  }
-
-  async function lintFolder(folder: string): Promise<string[]> {
-    const files: string[] = readAllFiles(folder, fileFilter).map((f) =>
-      normalizePath(f)
-    );
-
-    return lintFiles(files);
+  function getLintFiles(folder: string): string[] {
+    return readAllFiles(folder, fileFilter).map((f) => normalizePath(f));
   }
 
   return {
@@ -43,23 +26,64 @@ export default function linterPluginBuild(
     name: buildPluginName,
 
     async buildEnd() {
-      let outputLines: string[];
+      let files: string[];
       if (includeMode === "filesInFolder") {
-        outputLines = await lintFolder(process.cwd());
+        files = getLintFiles(process.cwd());
       } else {
-        outputLines = await lintFiles(transformedFiles);
+        files = transformedFiles;
       }
 
-      if (outputLines.length > 0) {
-        for (const output of outputLines) {
-          this.warn(output);
-        }
+      const workersByLinterName = createWorkerThreads(
+        "build",
+        buildPluginName,
+        options.linters
+      );
+
+      const lintTasks: Promise<string>[] = [];
+      for (const linterName of Object.keys(workersByLinterName)) {
+        lintTasks.push(
+          new Promise<string>((resolve) => {
+            const worker = workersByLinterName[linterName];
+
+            worker.on("message", async (message: WorkerThreadMessage) => {
+              const linter = options.linters.find(
+                (l) => l.name === message.linterName
+              )!;
+              resolve(await linter.format(message.result.build!));
+              worker.terminate();
+            });
+
+            worker.postMessage(files);
+          })
+        );
+      }
+
+      const results = (await Promise.all(lintTasks)).filter((r) => r);
+      for (const result of results) {
+        this.warn(result);
+      }
+      if (results.length > 0) {
         this.error("Linting failed, see above output");
       }
     },
 
-    lintFolder(folder: string) {
-      return lintFolder(folder);
+    getLinter(name: string) {
+      return options.linters.find((l) => l.name === name);
+    },
+
+    async lintFolder(folder: string) {
+      const files = getLintFiles(folder);
+
+      const outputLines: string[] = [];
+      for (const linter of options.linters) {
+        const result = await linter.lintBuild(files);
+        const output = await linter.format(result);
+        if (output) {
+          outputLines.push(output);
+        }
+      }
+
+      return outputLines;
     },
 
     transform(code, id) {
