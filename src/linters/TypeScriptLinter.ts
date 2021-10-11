@@ -62,7 +62,11 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
               });
             }
           },
-          () => {}
+          (diagnostic, newLine, options, errorCount) => {
+            if (errorCount !== undefined && errorCount <= 0) {
+              output({});
+            }
+          }
         );
         this.watcher = ts.createWatchProgram(host);
       } else {
