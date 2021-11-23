@@ -16,6 +16,8 @@ npm install vite-plugin-linter --save-dev
 
 ## Usage
 
+### Basic
+
 ```js
 import { defineConfig } from "vite";
 import { EsLinter, linterPlugin, TypeScriptLinter } from "vite-plugin-linter";
@@ -29,6 +31,32 @@ export default defineConfig((configEnv) => ({
   ],
 }));
 ```
+
+### Fancy
+
+```js
+import { defineConfig } from "vite";
+import { EsLinter, linterPlugin, TypeScriptLinter } from "vite-plugin-linter";
+
+export default defineConfig((configEnv) => ({
+  plugins: [
+    linterPlugin({
+      include: ["./src/**/*.ts", "./src/**/*.tsx"],
+      linters: [
+        new EsLinter({
+          configEnv: configEnv,
+          serveOptions: { clearCacheOnStart: true },
+        }),
+        new TypeScriptLinter(),
+      ],
+      build: {
+        includeMode: "filesInFolder",
+      }
+    }),
+  ],
+}));
+```
+
 
 ## linterPlugin Options
 

@@ -7,3 +7,7 @@
 
 ## 1.0.1 (2021-10-10)
 * Fixed bug where new files weren't included in the TypeScript lint output
+
+## 1.0.2 (2021-11-22)
+* Fixed error when a file was renamed
+* Added fancy config example
