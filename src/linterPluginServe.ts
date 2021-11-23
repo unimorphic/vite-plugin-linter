@@ -109,13 +109,10 @@ export default function linterPluginServe(
     }
   }
 
-  function watchDirectory(
-    directory: string,
-    pluginContext: PluginContext
-  ): void {
-    function onChange(itemName: string): void {
+  function watchDirectory(directory: string): void {
+    function onChange(itemName: string): boolean {
       if (!itemName) {
-        return;
+        return false;
       }
 
       const fullPath = path.join(directory, itemName);
@@ -164,19 +161,32 @@ export default function linterPluginServe(
         }
       }
 
-      if (includeMode === "filesInFolder" && changed) {
-        processFiles();
-      }
+      return changed;
     }
 
     let watchTimeout: NodeJS.Timeout;
+    let fileNames: string[] = [];
     fs.watch(
       directory,
       { persistent: false, recursive: true },
       (event, fileName) => {
-        clearTimeout(watchTimeout); // Ignore duplicate events
+        // Ignore duplicate events via a short timeout
+        clearTimeout(watchTimeout);
+        if (!fileNames.includes(fileName)) {
+          fileNames.push(fileName);
+        }
         watchTimeout = setTimeout(() => {
-          onChange(fileName);
+          let changed = false;
+          for (const file of fileNames) {
+            if (onChange(file)) {
+              changed = true;
+            }
+          }
+
+          if (includeMode === "filesInFolder" && changed) {
+            processFiles();
+          }
+          fileNames = [];
         }, 100);
       }
     );
@@ -199,7 +209,7 @@ export default function linterPluginServe(
 
       const currentDirectory = process.cwd();
 
-      watchDirectory(currentDirectory, this);
+      watchDirectory(currentDirectory);
 
       if (includeMode === "filesInFolder") {
         lintFiles = readAllFiles(currentDirectory, fileFilter).map((f) =>
