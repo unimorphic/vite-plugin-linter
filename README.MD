@@ -148,6 +148,18 @@ If the cache file should be removed before each start
 Output formatter https://eslint.org/docs/user-guide/formatters/
 
 
+## TypeScriptLinter Options
+
+This type extends [ts.CompilerOptions](https://www.typescriptlang.org/tsconfig#compilerOptions) with the following additional member
+
+### configFilePath
+
+- Type: `string`
+- Default: `tsconfig.json`
+
+Path to the TypeScript config file
+
+
 ## Command Line
 
 A node script that executes the configured linters is included that can be run via npm, for example, in package.json: `"scripts": { "lint": "vite-plugin-linter" }`. A example of where this could be used is in a Git pre-commit hook. The `includeMode` option is always `filesInFolder` when running via this script.

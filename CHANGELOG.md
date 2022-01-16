@@ -11,3 +11,6 @@
 ## 1.0.2 (2021-11-22)
 * Fixed error when a file was renamed
 * Added fancy config example
+
+## 1.1.0 (2022-01-16)
+* Added TypeScriptLinterOptions

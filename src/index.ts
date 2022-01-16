@@ -9,4 +9,5 @@ export type {
 export { default as EsLinter } from "./linters/EsLinter";
 export type { EsLinterOptions, EsLintOptions } from "./linters/EsLinter";
 export { default as TypeScriptLinter } from "./linters/TypeScriptLinter";
+export type { TypeScriptLinterOptions } from "./linters/TypeScriptLinter";
 export type { normalizePath, onlyUnique } from "./utils";
