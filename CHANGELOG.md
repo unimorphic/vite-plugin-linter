@@ -14,3 +14,6 @@
 
 ## 1.1.0 (2022-01-16)
 * Added TypeScriptLinterOptions
+
+## 1.2.0 (2022-03-14)
+* Fixed file watching error on Linux

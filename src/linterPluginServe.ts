@@ -1,3 +1,4 @@
+import { watch as chokidarWatch } from "chokidar";
 import fs from "fs";
 import path from "path";
 import { PluginContext } from "rollup";
@@ -110,16 +111,11 @@ export default function linterPluginServe(
   }
 
   function watchDirectory(directory: string): void {
-    function onChange(itemName: string): boolean {
-      if (!itemName) {
-        return false;
-      }
-
-      const fullPath = path.join(directory, itemName);
-      const normalizedPath = normalizePath(fullPath);
+    function onChange(fsPath: string): boolean {
+      const normalizedPath = normalizePath(fsPath);
       let changed = false;
 
-      if (fileFilter(fullPath)) {
+      if (fileFilter(fsPath)) {
         if (
           includeMode === "filesInFolder" &&
           !lintFiles.includes(normalizedPath)
@@ -127,11 +123,8 @@ export default function linterPluginServe(
           lintFiles.push(normalizedPath);
         }
         changed = true;
-      } else if (
-        fs.existsSync(itemName) &&
-        fs.lstatSync(itemName).isDirectory()
-      ) {
-        const children = readAllFiles(fullPath, fileFilter).map((f) =>
+      } else if (fs.existsSync(fsPath) && fs.lstatSync(fsPath).isDirectory()) {
+        const children = readAllFiles(fsPath, fileFilter).map((f) =>
           normalizePath(f)
         );
 
@@ -165,31 +158,57 @@ export default function linterPluginServe(
     }
 
     let watchTimeout: NodeJS.Timeout;
-    let fileNames: string[] = [];
-    fs.watch(
-      directory,
-      { persistent: false, recursive: true },
-      (event, fileName) => {
-        // Ignore duplicate events via a short timeout
-        clearTimeout(watchTimeout);
-        if (!fileNames.includes(fileName)) {
-          fileNames.push(fileName);
-        }
-        watchTimeout = setTimeout(() => {
-          let changed = false;
-          for (const file of fileNames) {
-            if (onChange(file)) {
-              changed = true;
-            }
-          }
+    let paths: string[] = [];
 
-          if (includeMode === "filesInFolder" && changed) {
-            processFiles();
-          }
-          fileNames = [];
-        }, 100);
+    function onEvent(fsPath: string): void {
+      // Ignore duplicate events via a short timeout
+      clearTimeout(watchTimeout);
+      if (!paths.includes(fsPath)) {
+        paths.push(fsPath);
       }
-    );
+      watchTimeout = setTimeout(() => {
+        let changed = false;
+        for (const path of paths) {
+          if (onChange(path)) {
+            changed = true;
+          }
+        }
+
+        if (includeMode === "filesInFolder" && changed) {
+          processFiles();
+        }
+        paths = [];
+      }, 100);
+    }
+
+    // fs.watch recursive is not supported on Linux and chokidar locks folders on Windows
+    if (process.platform === "linux") {
+      chokidarWatch(directory, {
+        ignored: /node_modules/,
+        ignoreInitial: true,
+        persistent: false,
+      }).on("all", (event, fsPath) => {
+        switch (event) {
+          case "add":
+            onEvent(fsPath);
+            break;
+          case "unlink":
+            const parentDirPath = path.resolve(fsPath, "..");
+            onEvent(parentDirPath);
+            break;
+        }
+      });
+    } else {
+      fs.watch(
+        directory,
+        { persistent: false, recursive: true },
+        (event, fileName) => {
+          if (fileName) {
+            onEvent(path.join(directory, fileName));
+          }
+        }
+      );
+    }
   }
 
   return {
