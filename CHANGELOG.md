@@ -17,3 +17,6 @@
 
 ## 1.2.0 (2022-03-14)
 * Fixed file watching error on Linux
+
+## 2.0.0 (2022-12-07)
+* Updated dependencies including eslint major version change 7 -> 8
