@@ -104,7 +104,7 @@ async function init(data: WorkerThreadData): Promise<void> {
 
 function removeFunctionsFromObject(
   object: object,
-  maxDepth = 5
+  maxDepth = 10
 ): FunctionInfo[] {
   const record = object as Record<string, unknown>;
   const functions: FunctionInfo[] = [];
@@ -126,7 +126,7 @@ function removeFunctionsFromObject(
 function restoreFunctionsToObject(
   object: object,
   functions: FunctionInfo[],
-  maxDepth = 5
+  maxDepth = 10
 ): void {
   const record = object as Record<string, unknown>;
 

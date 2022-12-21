@@ -21,5 +21,5 @@
 ## 2.0.0 (2022-12-07)
 * Updated dependencies including eslint major version change 7 -> 8
 
-## 2.0.1 (2022-12-21)
+## 2.0.2 (2022-12-21)
 * Fixed TypeScriptLinter error in build mode
