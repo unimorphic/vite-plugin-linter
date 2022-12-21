@@ -4,6 +4,12 @@ import { parentPort, Worker, workerData } from "worker_threads";
 import Linter, { LinterResult } from "./Linter";
 import { LinterPluginBase, LinterResultData } from "./linterPlugin";
 
+interface FunctionInfo {
+  function: unknown;
+  key: string;
+  source: Record<string, unknown>;
+}
+
 interface WorkerThreadData {
   command: "build" | "serve";
   linterName: string;
@@ -68,7 +74,10 @@ async function init(data: WorkerThreadData): Promise<void> {
           linterName: data.linterName,
           result: { build: buildResult },
         };
+
+        const functions = removeFunctionsFromObject(buildMessage);
         parentPort!.postMessage(buildMessage);
+        restoreFunctionsToObject(buildMessage, functions);
         break;
 
       case "serve":
@@ -79,7 +88,10 @@ async function init(data: WorkerThreadData): Promise<void> {
               linterName: data.linterName,
               result: { serve: serveResult },
             };
+            
+            const functions = removeFunctionsFromObject(serveMessage);
             parentPort!.postMessage(serveMessage);
+            restoreFunctionsToObject(serveMessage, functions);
           }
         });
         break;
@@ -88,6 +100,46 @@ async function init(data: WorkerThreadData): Promise<void> {
         throw new Error(`Uknown command ${data.command}`);
     }
   });
+}
+
+function removeFunctionsFromObject(
+  object: object,
+  maxDepth = 5
+): FunctionInfo[] {
+  const record = object as Record<string, unknown>;
+  const functions: FunctionInfo[] = [];
+
+  for (const key of Object.keys(record)) {
+    if (typeof record[key] === "function") {
+      functions.push({ function: record[key], key: key, source: record });
+      delete record[key];
+    } else if (typeof record[key] === typeof object && maxDepth > 0) {
+      functions.push(
+        ...removeFunctionsFromObject(record[key] as object, maxDepth - 1)
+      );
+    }
+  }
+
+  return functions;
+}
+
+function restoreFunctionsToObject(
+  object: object,
+  functions: FunctionInfo[],
+  maxDepth = 5
+): void {
+  const record = object as Record<string, unknown>;
+
+  const functionInfos = functions.filter((f) => f.source === record);
+  for (const functionInfo of functionInfos) {
+    record[functionInfo.key] = functionInfo.function;
+  }
+
+  for (const key of Object.keys(record)) {
+    if (typeof record[key] === typeof object && maxDepth > 0) {
+      restoreFunctionsToObject(record[key] as object, functions, maxDepth - 1);
+    }
+  }
 }
 
 if (workerData) {

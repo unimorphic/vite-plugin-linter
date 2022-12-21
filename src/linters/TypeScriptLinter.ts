@@ -11,12 +11,6 @@ export interface TypeScriptLinterOptions extends ts.CompilerOptions {
   configFilePath?: string;
 }
 
-interface FunctionInfo {
-  function: unknown;
-  key: string;
-  source: Record<string, unknown>;
-}
-
 const defaultOptions: TypeScriptLinterOptions = {
   configFilePath: "tsconfig.json",
   noEmit: true,
@@ -83,13 +77,9 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
             diagnostic.category !== ts.DiagnosticCategory.Message &&
             diagnostic.file
           ) {
-            const functions = this.removeFunctionsFromObject(diagnostic);
-
             output({
               [normalizePath(diagnostic.file.fileName)]: diagnostic,
             });
-
-            this.restoreFunctionsToObject(diagnostic, functions);
           }
         },
         (diagnostic, newLine, options, errorCount) => {
@@ -135,49 +125,5 @@ export default class TypeScriptLinter implements Linter<ts.Diagnostic> {
     );
 
     this.options = { ...compilerOptions.options, ...this.options };
-  }
-
-  private removeFunctionsFromObject(
-    object: object,
-    maxDepth = 5
-  ): FunctionInfo[] {
-    const record = object as Record<string, unknown>;
-    const functions: FunctionInfo[] = [];
-
-    for (const key of Object.keys(record)) {
-      if (typeof record[key] === "function") {
-        functions.push({ function: record[key], key: key, source: record });
-        delete record[key];
-      } else if (typeof record[key] === typeof object && maxDepth > 0) {
-        functions.push(
-          ...this.removeFunctionsFromObject(record[key] as object, maxDepth - 1)
-        );
-      }
-    }
-
-    return functions;
-  }
-
-  private restoreFunctionsToObject(
-    object: object,
-    functions: FunctionInfo[],
-    maxDepth = 5
-  ): void {
-    const record = object as Record<string, unknown>;
-
-    const functionInfos = functions.filter((f) => f.source === record);
-    for (const functionInfo of functionInfos) {
-      record[functionInfo.key] = functionInfo.function;
-    }
-
-    for (const key of Object.keys(record)) {
-      if (typeof record[key] === typeof object && maxDepth > 0) {
-        this.restoreFunctionsToObject(
-          record[key] as object,
-          functions,
-          maxDepth - 1
-        );
-      }
-    }
   }
 }
