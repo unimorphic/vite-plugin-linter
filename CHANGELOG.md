@@ -23,3 +23,6 @@
 
 ## 2.0.2 (2022-12-21)
 * Fixed TypeScriptLinter error in build mode
+
+## 2.0.3 (2023-08-06)
+* Updated dependencies
