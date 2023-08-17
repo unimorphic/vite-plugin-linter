@@ -26,3 +26,6 @@
 
 ## 2.0.3 (2023-08-06)
 * Updated dependencies
+
+## 2.0.4 (2023-08-17)
+* Fix null error

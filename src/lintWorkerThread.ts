@@ -88,7 +88,7 @@ async function init(data: WorkerThreadData): Promise<void> {
               linterName: data.linterName,
               result: { serve: serveResult },
             };
-            
+
             const functions = removeFunctionsFromObject(serveMessage);
             parentPort!.postMessage(serveMessage);
             restoreFunctionsToObject(serveMessage, functions);
@@ -113,7 +113,11 @@ function removeFunctionsFromObject(
     if (typeof record[key] === "function") {
       functions.push({ function: record[key], key: key, source: record });
       delete record[key];
-    } else if (typeof record[key] === typeof object && maxDepth > 0) {
+    } else if (
+      typeof record[key] === typeof object &&
+      record[key] !== null &&
+      maxDepth > 0
+    ) {
       functions.push(
         ...removeFunctionsFromObject(record[key] as object, maxDepth - 1)
       );
