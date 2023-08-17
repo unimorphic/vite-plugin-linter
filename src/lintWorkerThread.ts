@@ -140,7 +140,11 @@ function restoreFunctionsToObject(
   }
 
   for (const key of Object.keys(record)) {
-    if (typeof record[key] === typeof object && maxDepth > 0) {
+    if (
+      typeof record[key] === typeof object &&
+      record[key] !== null &&
+      maxDepth > 0
+    ) {
       restoreFunctionsToObject(record[key] as object, functions, maxDepth - 1);
     }
   }
