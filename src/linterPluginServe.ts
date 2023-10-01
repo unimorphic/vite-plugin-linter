@@ -267,20 +267,24 @@ export default function linterPluginServe(
     load(id) {
       const file = normalizePath(id);
 
-      if (options.injectFile) {
-        if (file === normalizePath(options.injectFile)) {
+      try {
+        if (options.injectFile) {
+          if (file === normalizePath(options.injectFile)) {
+            const content = fs.readFileSync(id);
+            return content + clientJs;
+          }
+        } else if (
+          (injectedFile === null &&
+            !file.startsWith("node_modules/") &&
+            fs.existsSync(id)) ||
+          file === injectedFile
+        ) {
           const content = fs.readFileSync(id);
+          injectedFile = file;
           return content + clientJs;
         }
-      } else if (
-        (injectedFile === null &&
-          !file.startsWith("node_modules/") &&
-          fs.existsSync(file)) ||
-        file === injectedFile
-      ) {
-        injectedFile = file;
-        const content = fs.readFileSync(id);
-        return content + clientJs;
+      } catch (ex) {
+        console.warn(`Could not open file ${id}`, ex);
       }
 
       return null;

@@ -29,3 +29,6 @@
 
 ## 2.0.5 (2023-08-17)
 * Fix null error
+
+## 2.0.6 (2023-09-30)
+* Fix file exists check & add read file error logging
