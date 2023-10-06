@@ -32,3 +32,6 @@
 
 ## 2.0.6 (2023-09-30)
 * Fix file exists check & add read file error logging
+
+## 2.0.7 (2023-10-06)
+* Added Access-Control-Allow-Origin header & fixed npm warning

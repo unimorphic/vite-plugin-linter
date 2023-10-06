@@ -251,6 +251,7 @@ export default function linterPluginServe(
             }
           }
 
+          res.setHeader("Access-Control-Allow-Origin", "*");
           res.setHeader("Content-Type", "application/json");
           res.write(JSON.stringify(outputs), "utf-8");
           res.end();
