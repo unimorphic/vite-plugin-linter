@@ -1,4 +1,5 @@
 import path from "path";
+import { fileURLToPath } from "url";
 import { resolveConfig } from "vite";
 import { parentPort, Worker, workerData } from "worker_threads";
 import Linter, { LinterResult } from "./Linter";
@@ -41,7 +42,7 @@ export function createWorkerThreads(
     };
 
     workersByLinterName[linter.name] = new Worker(
-      path.join(__dirname, "lintWorkerThread.mjs"),
+      fileURLToPath(import.meta.url),
       { workerData: data }
     );
   }

@@ -36,5 +36,5 @@
 ## 2.0.7 (2023-10-06)
 * Added Access-Control-Allow-Origin header & fixed npm warning
 
-## 2.1.0 (2024-01-21)
+## 2.1.1 (2024-01-21)
 * Added support for ESM build & updated dependencies

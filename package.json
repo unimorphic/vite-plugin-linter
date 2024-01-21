@@ -2,7 +2,7 @@
   "name": "vite-plugin-linter",
   "description": "Plugin for linting files with Vite",
   "license": "MIT",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "scripts": {
     "build": "unbuild",
     "prepare": "npm run build"
@@ -21,6 +21,13 @@
     "rollup": "4.9.6",
     "unbuild": "2.0.0",
     "vite": "5.0.12"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
   },
   "homepage": "https://bitbucket.org/unimorphic/vite-plugin-linter",
   "keywords": [
