@@ -41,7 +41,7 @@ export function createWorkerThreads(
     };
 
     workersByLinterName[linter.name] = new Worker(
-      path.join(__dirname, "lintWorkerThread.js"),
+      path.join(__dirname, "lintWorkerThread.mjs"),
       { workerData: data }
     );
   }
