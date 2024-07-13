@@ -2,7 +2,7 @@
   "name": "vite-plugin-linter",
   "description": "Plugin for linting files with Vite",
   "license": "MIT",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "scripts": {
     "build": "unbuild",
     "prepare": "npm run build"
@@ -10,17 +10,17 @@
   "bin": "./dist/lintCommand.mjs",
   "dependencies": {
     "@rollup/pluginutils": "5.1.0",
-    "@types/eslint": "8.56.2",
-    "chokidar": "3.5.3",
-    "eslint": "8.56.0",
-    "typescript": "5.3.3"
+    "@types/eslint": "8.56.10",
+    "chokidar": "3.6.0",
+    "eslint": "9.7.0",
+    "typescript": "5.5.3"
   },
   "devDependencies": {
-    "@types/node": "20.11.5",
-    "prettier": "3.2.4",
-    "rollup": "4.9.6",
+    "@types/node": "20.14.10",
+    "prettier": "3.3.3",
+    "rollup": "4.18.1",
     "unbuild": "2.0.0",
-    "vite": "5.0.12"
+    "vite": "5.3.3"
   },
   "exports": {
     ".": {

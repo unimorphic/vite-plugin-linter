@@ -1,4 +1,4 @@
-import { ESLint } from "eslint";
+import { ESLint, loadESLint } from "eslint";
 import fs from "fs";
 import { ConfigEnv } from "vite";
 import Linter, { LinterResult } from "../Linter";
@@ -48,7 +48,7 @@ const defaultServeOptions: EsLintOptions = {
 
 export default class EsLinter implements Linter<ESLint.LintResult> {
   public readonly name = "EsLinter";
-  private readonly eslint: ESLint;
+  private eslint: ESLint | null = null;
   private formatter: ESLint.Formatter | null = null;
   private readonly options: EsLintOptions;
 
@@ -59,10 +59,7 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
       this.options = { ...defaultServeOptions, ...options?.serveOptions };
     }
 
-    const { clearCacheOnStart, formatter, ...esLintOptions } = this.options;
-    this.eslint = new ESLint(esLintOptions);
-
-    if (clearCacheOnStart) {
+    if (this.options.clearCacheOnStart) {
       const cachePath = this.options.cacheLocation ?? ".eslintcache";
       if (fs.existsSync(cachePath)) {
         fs.unlinkSync(cachePath);
@@ -71,6 +68,9 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
   }
 
   public async format(results: ESLint.LintResult[]): Promise<string> {
+    if (!this.eslint) {
+      await this.loadLinter();
+    }
     if (!this.formatter) {
       await this.loadFormatter();
     }
@@ -99,14 +99,18 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
   }
 
   private async lint(files: string[]): Promise<ESLint.LintResult[]> {
+    if (!this.eslint) {
+      await this.loadLinter();
+    }
+
     const lintFiles: string[] = [];
     for (const file of files) {
-      if (!(await this.eslint.isPathIgnored(file))) {
+      if (!(await this.eslint!.isPathIgnored(file))) {
         lintFiles.push(file);
       }
     }
 
-    const reports = await this.eslint.lintFiles(lintFiles);
+    const reports = await this.eslint!.lintFiles(lintFiles);
 
     if (this.options.fix && reports) {
       ESLint.outputFixes(reports);
@@ -115,10 +119,17 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
     return reports;
   }
 
+  private async loadLinter(): Promise<void> {
+    const { clearCacheOnStart, formatter, ...esLintOptions } = this.options;
+
+    const esLint = await loadESLint();
+    this.eslint = new esLint(esLintOptions);
+  }
+
   private async loadFormatter(): Promise<void> {
     switch (typeof this.options.formatter) {
       case "string":
-        this.formatter = await this.eslint.loadFormatter(
+        this.formatter = await this.eslint!.loadFormatter(
           this.options.formatter
         );
         break;
@@ -126,7 +137,7 @@ export default class EsLinter implements Linter<ESLint.LintResult> {
         this.formatter = this.options.formatter;
         break;
       default:
-        this.formatter = await this.eslint.loadFormatter("stylish");
+        this.formatter = await this.eslint!.loadFormatter("stylish");
     }
   }
 }

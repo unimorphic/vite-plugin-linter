@@ -19,7 +19,7 @@
 * Fixed file watching error on Linux
 
 ## 2.0.0 (2022-12-07)
-* Updated dependencies including eslint major version change 7 -> 8
+* Updated dependencies including ESLint major version change 7 -> 8
 
 ## 2.0.2 (2022-12-21)
 * Fixed TypeScriptLinter error in build mode
@@ -38,3 +38,6 @@
 
 ## 2.1.1 (2024-01-21)
 * Added support for ESM build & updated dependencies
+
+## 3.0.0 (2024-07-13)
+* Updated dependencies including ESLint major version change 8 -> 9
