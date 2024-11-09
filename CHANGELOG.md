@@ -41,3 +41,6 @@
 
 ## 3.0.0 (2024-07-13)
 * Updated dependencies including ESLint major version change 8 -> 9
+
+## 3.0.1 (2024-11-09)
+* Updated dependencies
