@@ -44,3 +44,6 @@
 
 ## 3.0.1 (2024-11-09)
 * Updated dependencies
+
+## 3.1.0 (2025-09-22)
+* Updated dependencies
