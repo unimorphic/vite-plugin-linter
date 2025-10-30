@@ -167,14 +167,14 @@ A node script that executes the configured linters is included that can be run v
 
 ## Custom Linters
 
-Custom linters can be created by extending the [Linter interface](https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/Linter.ts)
+Custom linters can be created by extending the [Linter interface](https://github.com/unimorphic/vite-plugin-linter/blob/master/src/Linter.ts)
 
-See the [included linters](https://bitbucket.org/unimorphic/vite-plugin-linter/src/master/src/linters/) for examples
+See the [included linters](https://github.com/unimorphic/vite-plugin-linter/tree/master/src/linters) for examples
 
 
 ## Feedback
 
-[Submit](https://bitbucket.org/unimorphic/vite-plugin-linter/issues/new) bug reports and other feedback in the [issues](https://bitbucket.org/unimorphic/vite-plugin-linter/issues?status=new&status=open) section
+[Submit](https://github.com/unimorphic/vite-plugin-linter/issues/new) bug reports and other feedback in the [issues](https://github.com/unimorphic/vite-plugin-linter/issues) section
 
 
 ## License
